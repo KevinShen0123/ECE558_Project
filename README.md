@@ -18,6 +18,8 @@ Maybe have a server election,consensus,maybe can have new connect.
    1. File mpnitor By MD5,return filename, readfile,f=open("file","rb")
    2. 
 
-
+Before 11.20 have file monito logic
+Before 11.27 have Overall implemented project prototype
+11.27-final Presentation, Testing, Add Extra functions,Demo,Report
    
    
