@@ -16,7 +16,12 @@ Drawback:When server shut down, the system can't work
 Maybe have a server election,consensus,maybe can have new connect.
    Common:
    1. File mpnitor By MD5,return filename, readfile,f=open("file","rb")
-   2. 
+  
+Current json design:
+{"action": "add",
+"file_path": "C://home/share/share1.txt",
+"buffer": "fqhgophoq3gk4j3pjvqohnorph...qgnworfghqoi"
+}
 
 Before 11.20 have file monito logic
 Before 11.27 have Overall implemented project prototype
