@@ -4,11 +4,13 @@ import pickle
 import threading
 from server_connection import *
 # prepare for final merge
-if len(sys.argv) == 1:
+global socket_array
+if len(sys.argv) == 1:#The code for server side
    def handle_connection(server_socket):
        client_socket_dic = []  # record ip and port only,through recv from client,which is ip port
        lock = threading.Lock
        socket_array = []
+       global socket_array
        while True:
            print("Waiting for a connection...")
            client_socket, client_address = server_socket.accept()
@@ -27,6 +29,13 @@ if len(sys.argv) == 1:
    server_socket.listen(1000)
    connectionhandler=threading.Thread(target=handle_connection, args=(server_socket))
    connectionhandler.start()
-#    file change handle thread, recv, notify,update, judge conflict,server stores latest files with actions
+   def client_handler(client_socket):
+       try:
+          handle_client(client_socket)
+       except:
+           socket_array.remove(socket_array.index(client_socket))
+   for myclient in socket_array:
+       clienthandler = threading.Thread(target=clienthandler, args=(server_socket,myclient))
+       clienthandler.start()
 else:
-    pass
+   pass

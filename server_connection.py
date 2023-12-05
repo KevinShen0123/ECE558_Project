@@ -3,7 +3,7 @@ import threading
 import pickle
 import sys
 from server_change_receiver import handle_receive_add, handle_receive_update, handle_receive_delete
-
+lock=threading.Lock
 # server socket is a global variable
 # Wrapper method to send data to client
 def send_to_client(server_socket, message_type, data):
@@ -36,7 +36,7 @@ def handle_client_message(message, client_socket):
         print("Unknown message type received")
 
 # to avoid timeout
-def pre_process_message(client_socket):
+def pre_process_message(server_socket,client_socket):
     TIMEOUT_DURATION = 10
  
     client_socket.settimeout(TIMEOUT_DURATION)
@@ -70,38 +70,8 @@ def pre_process_message(client_socket):
 
     return message
 
-def handle_client(client_socket):
-    try:
-        # send the other client nodes' info to the client node requesting connection
-        other_clients = [client_socket_dic[client] for client in client_socket_dic.keys() if client != client_socket]
-        send_to_client(server_socket, "connection", other_clients)
-        
-        while True:
-            message = pre_process_message(client_socket)
-            handle_client_message(message)
-
-    except Exception as e:
-        print("Error with client {}:{}".format(client_socket,e))
-    finally:
-        with lock:
-            del client_socket_dic[client_socket]
-        client_socket.close()
-        print("Connection with {} closed.".format(client_socket))
-
-if len(sys.argv) == 1:
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('localhost', 12345)
-    server_socket.bind(server_address)
-    server_socket.listen(500)
-    client_socket_dic= {} # Use dictionary to record all client nodes' info
-    lock = threading.Lock
-
+def handle_client(server_socket,client_socket):
     while True:
-        print("Waiting for a connection...")
-        client_socket, client_address = server_socket.accept()
-        client_info = f"{client_address[0]}:{client_address[1]}"
-        with lock:
-            client_socket_dic[client_socket] = client_info
-        print("Accepted connection from {}".format(client_address))
-        threading.Thread(target=handle_client, args=(client_socket)).start()
+         message = pre_process_message(server_socket,client_socket)
+         handle_client_message(message,client_socket)
 
