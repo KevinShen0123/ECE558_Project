@@ -3,6 +3,7 @@ import socket
 import pickle
 import threading
 from server_connection import *
+from client_p2p_connection import *
 # prepare for final merge
 global socket_array
 if len(sys.argv) == 1:#The code for server side
@@ -16,6 +17,7 @@ if len(sys.argv) == 1:#The code for server side
            client_socket, client_address = server_socket.accept()
            socket_array.append(client_socket)  # remeber all the socket
            client_info_str = client_socket.recv(1024)
+           client_info_str=pickle.load(client_info_str)
            client_info_list = client_info_str.split(" ")
            client_ip = client_info_list[0]
            client_port = int(client_info_list[1])
@@ -38,4 +40,11 @@ if len(sys.argv) == 1:#The code for server side
        clienthandler = threading.Thread(target=clienthandler, args=(server_socket,myclient))
        clienthandler.start()
 else:
-   pass
+   if len(sys.argv)<5:
+       print("wrong format!")
+       exit(0)
+   #  client side logic
+   server_ip=sys.argv[1]
+   server_port=int(sys.argv[2])
+   client_entry_thread=threading.Thread(target=client_entry,args=((server_ip,server_port,sys.argv[3],int(sys.argv[4]))))
+   client_entry_thread.start()

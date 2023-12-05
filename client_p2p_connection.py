@@ -7,9 +7,10 @@ from client_change_receiver import handle_receive_add, handle_receive_update, ha
 # one thread for each pair to pair connection
 lock = threading.Lock()
 # store info about established pair connection
-pair_connections = []
+global pair_connections
+pair_connections=[]
 server_socket = None
-
+global neighborips
 def getConnection():
     if server_socket:
         return server_socket
@@ -20,16 +21,7 @@ def getConnection():
 def handle_received_message(message):
     message_type = message['type']
     data = message['data']
-
-    if message_type == 'connection':
-        other_clients = data
-        for client_info in other_clients:
-            if client_info in pair_connections:
-                continue
-            else:
-                ip, port = client_info.split(':')
-                threading.Thread(target=handle_client_connection, args=(ip,int(port))).start()
-    elif message_type == 'add':
+    if message_type == 'add':
         file_path = data['file_path']
         file_data = data['file_data']
         handle_receive_add(file_path,file_data)
@@ -47,7 +39,7 @@ def handle_received_message(message):
     elif message_type == 'confirmation':
         result = message['data']['result']
         if result == "SUCCESS":
-            print("File {} transferred successfully.".format(file_path))
+            print("File {} transferred successfully.".format(data['file_path']))
             return
         if result == "FAIL":
             file_path = message['data']['file_path']
@@ -57,24 +49,27 @@ def handle_received_message(message):
         print("Unknown message type received")
 
 # Method to create a new thread for each p2p connection
-def handle_client_connection(ip, port):
-    try:
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect((ip,port))
-        with lock:
-            pair_connections.append(client_socket)
+def handle_client_connection(ips):
+   for iplist in ips:
+       ip=iplist[0]
+       port=iplist[1]
+       client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+       try:
+           client_socket.connect((ip, port))
+           with lock:
+               pair_connections.append(client_socket)
 
-        # TODO: Add logic for election
-        while True:
-            message = client_socket.recv(4096)
-        
-    except Exception as e:
-        print("Could not connect to {}:{} - {}".format(ip,port,e))
+           # # TODO: Add logic for election
+           # while True:
+           #     message = client_socket.recv(4096)
 
-    finally:
-        client_socket.close()
-        with lock:
-            pair_connections.remove(client_socket)
+       except Exception as e:
+           print("Could not connect to {}:{} - {}".format(ip, port, e))
+
+       finally:
+           client_socket.close()
+           with lock:
+               pair_connections.remove(client_socket)
 
 # A wrapper to send message to server
 # Two types of message: update_notifications, delete_notifications
@@ -88,21 +83,34 @@ def send_to_server(server_socket, message_type, data):
     with lock:
         server_socket.sendall(serialized_message)
 
-def main():
-    # load the config info
-    server_ip = server_ip
-    server_port = server_port
-
-    # connect to the server
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.connect((server_ip,server_port))
-
-    # receive data from the server
-    while True:
-        message = pre_process_message(server_socket)
-
-        handle_received_message(message)
-
+def client_entry(server_ip,server_port,client_ip,client_port):
+   try:
+       # load the config info
+       server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+       server_address = (client_ip, client_port)
+       server_socket.bind(server_address)
+       server_socket.listen(1000)
+       server_ip = server_ip
+       server_port = server_port
+       # connect to the server
+       client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+       try:
+           client_socket.connect((server_ip, server_port))
+           client_socket.send(pickle.dumps((client_ip+" "+str(client_port))))
+       except:
+           print("can not connect to server")
+           exit(0)
+       dumpediplist=client_socket.recv(4096)
+       global neighborips
+       neighborips=pickle.loads(dumpediplist)
+       connectionhandler=threading.Thread(target=handle_client_connection)
+       connectionhandler.start()
+       # receive data from the server
+       while True:
+           message = pre_process_message(client_socket)
+           handle_received_message(message)
+   except:
+       print("error!")
 # to avoid timeout
 # refactor 
 # almost the same as the function in server connection
@@ -139,7 +147,3 @@ def pre_process_message(server_socket):
         }
 
     return message
-        
-if __name__ == "__main__":
-    main()
-
