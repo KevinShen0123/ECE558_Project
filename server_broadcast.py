@@ -2,31 +2,31 @@ import socket
 import threading
 import os
 
-from server_connection import client_socket_dic, send_to_client, lock
-
+import server_connection
+import main
 def update_broadcast_message(file_path):
     file_size = os.path.getsize(file_path)
     max_size = 1024 * 1024 * 5
 
     if file_size > max_size:
-        with lock:
-            for conn in client_socket_dic.keys():
+        with server_connection.lock:
+            for conn in main.socket_array:
                 try:
                     send_chunked_data_over_existing_connection(conn, file_path)
                 except Exception as e:
                     print("Error sending message to client: {}".format(e))
         
     else:
-        with lock:
-            for conn in client_socket_dic.keys():
+        with server_connection.lock:
+            for conn in main.socket_array:
                 try:
                     send_data_over_existing_connection(conn, file_path)
                 except Exception as e:
                     print("Error sending message to client: {}".format(e))
 
 def delete_broadcast_message(file_path):
-    with lock:
-            for conn in client_socket_dic.keys():
+    with server_connection.lock:
+            for conn in main.socket_array:
                 try:
                     send_delete_file_request(conn, file_path)
                 except Exception as e:
@@ -44,8 +44,8 @@ def send_data_over_existing_connection(conn, file_path):
                 "file_path":file_path,
                 "file_data": data,
             }
-            send_to_client(conn, "small_update", send_data)
-    send_to_client(conn, "small_update", b'END')
+            server_connection.send_to_client(conn, "small_update", send_data)
+    server_connection.send_to_client(conn, "small_update", b'END')
 
 # Chunk the data and then send data over existing connection
 def send_chunked_data_over_existing_connection(conn, file_path, chunk_size=1024*1024*5):
@@ -60,10 +60,10 @@ def send_chunked_data_over_existing_connection(conn, file_path, chunk_size=1024*
                 "file_path":file_path,
                 "file_data": data,
             }
-            send_to_client(conn, "large_update",header+send_data)
+            server_connection.send_to_client(conn, "large_update",header+send_data)
     
     # send end of file signal to server
-    send_to_client(conn, "large_update", b'END')
+    server_connection.send_to_client(conn, "large_update", b'END')
 
 # send delte request
 def send_delete_file_request(conn,file_path):
@@ -71,7 +71,7 @@ def send_delete_file_request(conn,file_path):
                 "file_path":file_path,
                 "file_data": None,
             }
-    send_to_client(conn, "delete", send_data)
+    server_connection.send_to_client(conn, "delete", send_data)
         
 
     

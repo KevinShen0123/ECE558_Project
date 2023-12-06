@@ -2,7 +2,7 @@ import socket
 import pickle
 import threading
 from config import server_ip, server_port
-from client_change_receiver import handle_receive_add, handle_receive_update, handle_receive_delete
+import client_change_receiver
 
 # one thread for each pair to pair connection
 lock = threading.Lock()
@@ -11,6 +11,7 @@ global pair_connections
 pair_connections=[]
 server_socket = None
 global neighborips
+global client_id
 def getConnection():
     if server_socket:
         return server_socket
@@ -24,18 +25,18 @@ def handle_received_message(message):
     if message_type == 'add':
         file_path = data['file_path']
         file_data = data['file_data']
-        handle_receive_add(file_path,file_data)
+        client_change_receiver.handle_receive_add(file_path,file_data)
     elif message_type == 'small_update':
         file_path = data['file_path']
         file_data = data['file_data']
-        handle_receive_update(file_path,file_data)
+        client_change_receiver.handle_receive_update(file_path,file_data)
     elif message_type == 'large_update':
         file_path = data['file_path']
         file_data = data['file_data']
-        handle_receive_update(file_path,file_data)     
+        client_change_receiver.handle_receive_update(file_path,file_data)
     elif message_type == 'delete':
         file_path = data['file_path']
-        handle_receive_delete(file_path)
+        client_change_receiver.handle_receive_delete(file_path)
     elif message_type == 'confirmation':
         result = message['data']['result']
         if result == "SUCCESS":
@@ -44,7 +45,7 @@ def handle_received_message(message):
         if result == "FAIL":
             file_path = message['data']['file_path']
             # The only possibility for a failed change is that the file has been deleted
-            handle_receive_delete(file_path)
+            client_change_receiver.handle_receive_delete(file_path)
     else:
         print("Unknown message type received")
 

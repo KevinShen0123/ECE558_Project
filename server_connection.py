@@ -2,7 +2,7 @@ import socket
 import threading
 import pickle
 import sys
-from server_change_receiver import handle_receive_add, handle_receive_update, handle_receive_delete
+import server_change_receiver
 lock=threading.Lock
 # server socket is a global variable
 # Wrapper method to send data to client
@@ -20,18 +20,18 @@ def handle_client_message(message, client_socket):
     if message_type == 'add':
         file_path = data['file_path']
         file_data = data['file_data']
-        handle_receive_add(file_path,file_data)
+        server_change_receiver.handle_receive_add(file_path,file_data)
     if message_type == 'small_update':
         file_path = data['file_path']
         file_data = data['file_data']
-        handle_receive_update(file_path,file_data)
+        server_change_receiver.handle_receive_update(file_path,file_data)
     if message_type == 'large_update':
         file_path = data['file_path']
         file_data = data['file_data']
-        handle_receive_update(file_path,file_data) 
+        server_change_receiver.handle_receive_update(file_path,file_data)
     if message_type == 'delete':
         file_path = data['file_path']
-        handle_receive_delete(file_path)
+        server_change_receiver.handle_receive_delete(file_path)
     else:
         print("Unknown message type received")
 
@@ -74,4 +74,3 @@ def handle_client(server_socket,client_socket):
     while True:
          message = pre_process_message(server_socket,client_socket)
          handle_client_message(message,client_socket)
-

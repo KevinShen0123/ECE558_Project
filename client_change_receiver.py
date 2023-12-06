@@ -1,7 +1,7 @@
 import time
 import os
 import socket
-from client_p2p_connection import send_to_server
+import client_p2p_connection
 
 file_status_dict = {}
 
